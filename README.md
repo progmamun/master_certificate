@@ -1,1 +1,1 @@
-# master_certificate
+# Master Academy Certificate
