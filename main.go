@@ -45,8 +45,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 	session, err := store.Get(r, "mysession")
 	checkErr(err)
 
-	//** process sratrs for preparing data **//
-	// preparing data for sending to frontend
+	//** process starts: preparing data for sending to frontend **//
 	if session.Values["isLoggedIn"] == nil {
 		session.Values["isLoggedIn"] = false
 		session.Values["username"] = ""
@@ -62,13 +61,13 @@ func home(w http.ResponseWriter, r *http.Request) {
 		IsLoggedIn: session.Values["isLoggedIn"].(bool),
 		Username:   session.Values["username"].(string),
 	}
-	//** process ends for preparing data **//
+	//** process ends: preparing data for sending to frontend **//
 
-	//** process starts for executing template **//
+	//** process starts: executing template **//
 	tmpl, err := template.ParseFiles("template/index.gohtml")
 	checkErr(err)
 	tmpl.Execute(w, data)
-	//** process ends for executing template **//
+	//** process ends: executing template **//
 }
 
 func about(w http.ResponseWriter, r *http.Request) {
