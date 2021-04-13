@@ -11,14 +11,16 @@ func register(w http.ResponseWriter, r *http.Request) {
 	checkErr(err)
 
 	if r.Method != "POST" {
-		if session.Values["isLoggedIn"] == true {
+		if session.Values["isLoggedIn"] == true { // if already logged in, then redirecting to homepage
 			http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
 		} else {
-			//preparing data for sending to frontend
+			//** process starts: preparing data for sending to frontend **//
 			if session.Values["isLoggedIn"] == nil {
 				session.Values["isLoggedIn"] = false
 				session.Values["username"] = ""
 			}
+
+			// using struct literal
 			data := struct {
 				Title      string
 				IsLoggedIn bool
@@ -28,23 +30,27 @@ func register(w http.ResponseWriter, r *http.Request) {
 				IsLoggedIn: session.Values["isLoggedIn"].(bool),
 				Username:   session.Values["username"].(string),
 			}
+			//** process ends: preparing data for sending to frontend **//
 
+			//** process starts: executing template **//
 			tmpl, err := template.ParseFiles("template/index.gohtml")
 			checkErr(err)
 			tmpl, err = tmpl.ParseFiles("wpage/register.gohtml")
 			checkErr(err)
 			tmpl.Execute(w, data)
+			//** process ends: executing template **//
 		}
 	} else {
-		//getting form data
+		//** process starts: getting form data **//
 		formData := make(map[string]string)
 		formData["firstName"] = strings.TrimSpace(r.FormValue("firstName"))
 		formData["lastName"] = strings.TrimSpace(r.FormValue("lastName"))
 		formData["username"] = strings.TrimSpace(r.FormValue("username"))
 		formData["email"] = strings.TrimSpace(r.FormValue("email"))
 		formData["password"] = r.FormValue("password")
+		//** process ends: getting form data **//
 
-		doRegistration(formData, w, r) //if not exsist, then proceed to registration
+		doRegistration(formData, w, r) // calling a function which will do the registration
 	}
 }
 
