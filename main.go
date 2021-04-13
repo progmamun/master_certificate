@@ -45,25 +45,30 @@ func home(w http.ResponseWriter, r *http.Request) {
 	session, err := store.Get(r, "mysession")
 	checkErr(err)
 
-	//preparing data for sending frontend
+	//** process sratrs for preparing data **//
+	// preparing data for sending to frontend
 	if session.Values["isLoggedIn"] == nil {
 		session.Values["isLoggedIn"] = false
 		session.Values["username"] = ""
 	}
 
+	// using struct literal
 	data := struct {
 		Title      string
 		IsLoggedIn bool
 		Username   string
 	}{
-		Title:      "Material Forms | MASTER-ACADEMY",
+		Title:      "Certificate Generator | MASTER-ACADEMY",
 		IsLoggedIn: session.Values["isLoggedIn"].(bool),
 		Username:   session.Values["username"].(string),
 	}
+	//** process ends for preparing data **//
 
+	//** process starts for executing template **//
 	tmpl, err := template.ParseFiles("template/index.gohtml")
 	checkErr(err)
 	tmpl.Execute(w, data)
+	//** process ends for executing template **//
 }
 
 func about(w http.ResponseWriter, r *http.Request) {
