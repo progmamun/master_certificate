@@ -19,42 +19,43 @@ var db *mcb.DB
 const (
 	BucketName = "master_erp" //
 
-	CompanyTable            = "company"              //
 	AccessTable             = "access"               //
-	LoginTable              = "login"                //
 	AccountTable            = "account"              //
-	ContactTable            = "contact"              //
-	LoginSessionTable       = "login_session"        //
-	DeviceLogTable          = "device_log"           //
-	VisitorSessionTable     = "visitor_session"      //
-	VerificationTable       = "verification"         //
-	MessageTable            = "message"              //
+	AccountHeadTable        = "achead"               //account_head ledger head
 	ActivityLogTable        = "activity_log"         //
-	SettingsTable           = "settings"             //
+	AddressTable            = "address"              // contact address
 	CategoryTable           = "category"             //**ItemCategory
-	ItemTable               = "item"                 //**
-	WarehouseTable          = "warehouse"            //
-	DocKeeperTable          = "doc_keeper"           //
-	TransactionRecordTable  = "transaction_record"   //sales|purchase
-	StockMovementTable      = "stock_movement"       //
-	LedgerTransactionTable  = "ledger_transaction"   //
-	FileStoreTable          = "file_store"           //
+	CompanyTable            = "company"              //
+	ContactTable            = "contact"              //
 	DepartmentTable         = "department"           //owner = item | item_line | office
-	ItemRewardTable         = "item_reward"          // item purchase point for loyalty
+	DeviceLogTable          = "device_log"           //
+	DocKeeperTable          = "doc_keeper"           //
+	DocPayShipTable         = "docpayship"           //doc_payship_info
+	FileStoreTable          = "file_store"           //
+	ItemTable               = "item"                 //**
 	ItemAttributeTable      = "item_attribute"       //
 	ItemAttributeValueTable = "item_attribute_value" //
-	UOMTable                = "uom"                  //
-	TaxTable                = "tax"                  //tax | vat table
-	AccountHeadTable        = "achead"               //account_head ledger head
-	Rateplan                = "rateplan"             //
-	AddressTable            = "address"              // contact address
-	ShippingAddressTable    = "shipping_address"     //*
+	ItemRewardTable         = "item_reward"          // item purchase point for loyalty
+	LedgerTransactionTable  = "ledger_transaction"   //
+	LoginTable              = "login"                //
+	LoginSessionTable       = "login_session"        //
+	MessageTable            = "message"              //
 	PaymentOptionTable      = "payment_option"       //
+	Rateplan                = "rateplan"             //
+	SettingsTable           = "settings"             //
+	ShippingAddressTable    = "shipping_address"     //*
 	ShippingOptionTable     = "shipping_option"      //
-	DocPayShipTable         = "docpayship"           //doc_payship_info
+	StockMovementTable      = "stock_movement"       //
+	TaxTable                = "tax"                  //tax | vat table
+	TransactionRecordTable  = "transaction_record"   //sales|purchase
+	UOMTable                = "uom"                  //
+	VerificationTable       = "verification"         //
+	VisitorSessionTable     = "visitor_session"      //
+	WarehouseTable          = "warehouse"            //
 	//AccountGroupTable       = "account_group"        //removed account group
 )
 
+// init() function establish Database connection
 func init() {
 	//couchbase connection block
 	db = mcb.Connect("localhost", "root", "bootcamp")
@@ -66,123 +67,123 @@ func init() {
 }
 
 func doRegistration(formData map[string]string, w http.ResponseWriter, r *http.Request) {
-	//** process starts for checking into DB **//
+	//** process starts: checking into DB **//
 	check := isExsist(formData) //checking if username or email already exsist or not
 	if check != "" {
 		fmt.Fprintln(w, check)
 		return
 	}
-	//** process ends for checking into DB **//
+	//** process ends: checking into DB **//
 
-	//** process starts for AccountTable **//
+	//** process starts: AccountTable **//
 	cid := "company::1"
 	accID, accSerial := findAailabledocID(AccountTable)
 	ledgerCode := getLedgerCode(accSerial)
 	fullName := strings.TrimSpace(formData["firstName"]) + " " + strings.TrimSpace(formData["lastName"])
 	createDate := time.Now().String()[:19]
 
-	r.Form.Set("bucket", BucketName)
-	r.Form.Set("aid", accID)
-	r.Form.Set("type", AccountTable)
-	r.Form.Set("cid", cid)
-	r.Form.Set("serial", strconv.FormatInt(accSerial, 10))
-	r.Form.Set("photo", "")
-	r.Form.Set("account_type", "STUDENT")
-	r.Form.Set("account_name", fullName)
-	r.Form.Set("customid", "")
-	r.Form.Set("code", ledgerCode) //ledgercode
-	r.Form.Set("login_id", "")
-	r.Form.Set("first_name", strings.TrimSpace(formData["firstName"]))
-	r.Form.Set("last_name", strings.TrimSpace(formData["lastName"]))
-	r.Form.Set("dob", "")
-	r.Form.Set("gender", "")
-	r.Form.Set("mobile", "")
-	r.Form.Set("email", formData["email"])
-	r.Form.Set("remarks", "Added by Form")
-	r.Form.Set("create_date", createDate)
-	r.Form.Set("update_date", createDate)
-	r.Form.Set("status", "1")
+	r.Form.Set("bucket", BucketName)                                   //
+	r.Form.Set("aid", accID)                                           //
+	r.Form.Set("type", AccountTable)                                   // account
+	r.Form.Set("cid", cid)                                             // foreign key
+	r.Form.Set("serial", strconv.FormatInt(accSerial, 10))             // company wise increase
+	r.Form.Set("photo", "")                                            // account owner photo
+	r.Form.Set("account_type", "STUDENT")                              // vendor,goods_supplier,customer,consumer,payment_provider,shipping_provider
+	r.Form.Set("account_name", fullName)                               // supplier business name or username
+	r.Form.Set("customid", "")                                         // unique customer IDENTIFICATION
+	r.Form.Set("code", ledgerCode)                                     // supplier or customer code or ledgercode
+	r.Form.Set("login_id", "")                                         // foreign key
+	r.Form.Set("first_name", strings.TrimSpace(formData["firstName"])) //
+	r.Form.Set("last_name", strings.TrimSpace(formData["lastName"]))   //
+	r.Form.Set("dob", "")                                              //
+	r.Form.Set("gender", "")                                           // female,male,other
+	r.Form.Set("mobile", "")                                           // phone
+	r.Form.Set("email", formData["email"])                             //
+	r.Form.Set("remarks", "Added by Form")                             // avg salary
+	r.Form.Set("create_date", createDate)                              //
+	r.Form.Set("update_date", createDate)                              //
+	r.Form.Set("status", "1")                                          //
 
 	var account models.Account
 	insert1 := db.Insert(r.Form, &account) //insert query
-	//** process ends for AccountTable **//
+	//** process ends: AccountTable **//
 
-	//** process starts for LoginTable **//
+	//** process starts: LoginTable **//
 	loginID, loginSerial := findAailabledocID(LoginTable)
 
-	r.Form.Set("aid", loginID)
-	r.Form.Set("type", LoginTable)
-	r.Form.Set("cid", cid)
-	r.Form.Set("serial", strconv.FormatInt(loginSerial, 10))
-	r.Form.Set("account_id", accID)
-	r.Form.Set("access_name", "STUDENT")
-	r.Form.Set("username", formData["username"])
-	r.Form.Set("passw", makeHash(formData["password"]))
-	r.Form.Set("create_date", createDate)
-	r.Form.Set("last_login", "")
-	r.Form.Set("status", "1")
+	r.Form.Set("aid", loginID)                               //
+	r.Form.Set("type", LoginTable)                           //
+	r.Form.Set("cid", cid)                                   // foreign key
+	r.Form.Set("serial", strconv.FormatInt(loginSerial, 10)) // company wise increasing
+	r.Form.Set("account_id", accID)                          // foreign key
+	r.Form.Set("access_name", "STUDENT")                     // customer type
+	r.Form.Set("username", formData["username"])             // email or mobile as username
+	r.Form.Set("passw", makeHash(formData["password"]))      //
+	r.Form.Set("create_date", createDate)                    //
+	r.Form.Set("last_login", "")                             //
+	r.Form.Set("status", "1")                                //
 
 	var login models.Login
 	insert2 := db.Insert(r.Form, &login)
-	//** process ends for LoginTable **//
+	//** process ends: LoginTable **//
 
-	//** process starts for AddressTable **//
+	//** process starts: AddressTable **//
 	addID, addSerial := findAailabledocID(AddressTable)
 
-	r.Form.Set("aid", addID)
-	r.Form.Set("type", AddressTable)
-	r.Form.Set("cid", cid)
-	r.Form.Set("serial", strconv.FormatInt(addSerial, 10))
-	r.Form.Set("account_id", accID)
-	r.Form.Set("address_type", "Billing")
-	r.Form.Set("country", "")
-	r.Form.Set("state", "")
-	r.Form.Set("city", "")
-	r.Form.Set("address1", "")
-	r.Form.Set("address2", "")
-	r.Form.Set("zip", "")
-	r.Form.Set("status", "1")
+	r.Form.Set("aid", addID)                               //
+	r.Form.Set("type", AddressTable)                       //
+	r.Form.Set("cid", cid)                                 // foreign key
+	r.Form.Set("serial", strconv.FormatInt(addSerial, 10)) //
+	r.Form.Set("account_id", accID)                        // foreign key
+	r.Form.Set("address_type", "Billing")                  // billing,shipping
+	r.Form.Set("country", "")                              //
+	r.Form.Set("state", "")                                //
+	r.Form.Set("city", "")                                 //
+	r.Form.Set("address1", "")                             //
+	r.Form.Set("address2", "")                             //
+	r.Form.Set("zip", "")                                  //
+	r.Form.Set("status", "1")                              //
 
 	var address models.Address
 	insert3 := db.Insert(r.Form, &address)
-	//** process ends for AddressTable **//
+	//** process ends: AddressTable **//
 
-	//** process starts for AccountHeadTable **//
+	//** process starts: AccountHeadTable **//
 	fVal := getFieldVals("aid,account_type", AccountHeadTable, fmt.Sprintf(`cid="%s" AND name="%s" AND account_group="group"`, cid, "Account Receivable"))
 	parentID := fVal["aid"]
 	accHeadID, accHeadSerial := findAailabledocID(AccountHeadTable)
 
-	r.Form.Set("aid", accHeadID)
-	r.Form.Set("type", AccountHeadTable)
-	r.Form.Set("cid", cid)
-	r.Form.Set("serial", strconv.FormatInt(accHeadSerial, 10))
-	r.Form.Set("account_group", fVal["account_group"])
-	r.Form.Set("account_type", "STUDENT")
-	r.Form.Set("name", fullName+"(STUDENT)")
-	r.Form.Set("description", "")
-	r.Form.Set("identifier", "receivable")
-	r.Form.Set("code", ledgerCode) //ledgercode
-	r.Form.Set("parent_id", parentID)
-	r.Form.Set("balance", fmt.Sprintf("%f", 0.0))
-	r.Form.Set("baltype", "Eq")
-	r.Form.Set("restricted", "0")
-	r.Form.Set("cost_center", "0")
-	r.Form.Set("remarks", "")
-	r.Form.Set("create_date", createDate)
-	r.Form.Set("status", "1")
+	r.Form.Set("aid", accHeadID)                               // unique id
+	r.Form.Set("type", AccountHeadTable)                       // table
+	r.Form.Set("cid", cid)                                     // foreign key
+	r.Form.Set("serial", strconv.FormatInt(accHeadSerial, 10)) // company wise increase
+	r.Form.Set("account_group", fVal["account_group"])         // AccountGroup= Asset|Liability|Equity|Revenue|Expense
+	r.Form.Set("account_type", "STUDENT")                      // group|head
+	r.Form.Set("name", fullName+"(STUDENT)")                   // ledger name
+	r.Form.Set("description", "")                              // ledger_details
+	r.Form.Set("identifier", "receivable")                     // for ensuring no ledgers are duplicate
+	r.Form.Set("code", ledgerCode)                             // ledger number or ledgercode
+	r.Form.Set("parent_id", parentID)                          // parent account
+	r.Form.Set("balance", fmt.Sprintf("%f", 0.0))              // ledger balance
+	r.Form.Set("baltype", "Eq")                                // ledger balance type Dr or Cr
+	r.Form.Set("restricted", "0")                              // 1=Yes, No=0
+	r.Form.Set("cost_center", "0")                             // 1=Yes, No=0
+	r.Form.Set("remarks", "")                                  //
+	r.Form.Set("create_date", createDate)                      // insert date
+	r.Form.Set("status", "1")                                  // 0=Inactive, 1=Active, 9=Deleted
 
 	var accountHead models.AccountHead
 	insert4 := db.Insert(r.Form, &accountHead)
-	//** process ends for AccountHeadTable **//
+	//** process ends: AccountHeadTable **//
 
-	//** process starts for updating AccountTable with login ID**//
+	//** process starts: updating AccountTable with login ID **//
 	qs := `UPDATE master_erp SET login_id = "%s" WHERE type = "account" AND aid = "%s" RETURNING login_id`
 	sql := fmt.Sprintf(qs, loginID, accID)
 
 	pRes := db.Query(sql)
 	rows := pRes.GetRows()
 	updateRes := rows[0]["login_id"].(string)
-	//** process ends for updating AccountTable **//
+	//** process ends: updating AccountTable **//
 
 	if insert1.Status == "success" && insert2.Status == "success" && insert3.Status == "success" && insert4.Status == "success" && updateRes == loginID {
 		//sending mail verification link to the user mail
@@ -193,24 +194,32 @@ func doRegistration(formData map[string]string, w http.ResponseWriter, r *http.R
 		fmt.Fprintln(w, "Registration Error")
 	}
 }
+
+// isExist() function checks the existance of username and email in DB
 func isExsist(formData map[string]string) string {
-	//checking for username
-	query := `SELECT username FROM master_erp WHERE type="login" AND username="` + formData["username"] + `"`
-	queryRes := db.Query(query)
-	rows := queryRes.GetRows()
+	//checking: username
+	qs := `SELECT username FROM master_erp WHERE type="login" AND username="%s"`
+	sql := fmt.Sprintf(qs, formData["username"])
+
+	pRes := db.Query(sql)
+	rows := pRes.GetRows()
 	if len(rows) != 0 {
 		return "username"
 	}
 
-	//checking for email
-	query = `SELECT email FROM master_erp WHERE type="account" AND email="` + formData["email"] + `"`
-	queryRes = db.Query(query)
-	rows = queryRes.GetRows()
+	//checking: email
+	qs = `SELECT email FROM master_erp WHERE type="account" AND email="%s"`
+	sql = fmt.Sprintf(qs, formData["email"])
+
+	pRes = db.Query(sql)
+	rows = pRes.GetRows()
 	if len(rows) != 0 {
 		return "email"
 	}
 	return ""
 }
+
+// getLedgerCode() function creates a ledger code
 func getLedgerCode(accSerial int64) string {
 	serial := strconv.FormatInt(accSerial, 10)
 	ledgerCode := "12"
@@ -220,10 +229,14 @@ func getLedgerCode(accSerial int64) string {
 	ledgerCode += serial
 	return ledgerCode
 }
+
+// makeHash() function encrypts the password
 func makeHash(password string) string {
 	bytes, _ := bcrypt.GenerateFromPassword([]byte(password), 14)
 	return string(bytes)
 }
+
+// findAailabledocID() function finds the next serial number and aid for any table [this function Got from Mostain Sir]
 func findAailabledocID(table string) (string, int64) {
 	var docID string
 	var scount int64 = int64(maxDoc(BucketName, table, db))
@@ -246,8 +259,9 @@ func findAailabledocID(table string) (string, int64) {
 		i++
 	}
 }
-func maxDoc(bucketName, tableName string, db *mcb.DB) (count float64) {
 
+// maxDoc() function is called from findAailabledocID() function [this function Got from Mostain Sir]
+func maxDoc(bucketName, tableName string, db *mcb.DB) (count float64) {
 	sql := fmt.Sprintf(`SELECT NVL(MAX(serial),0)as cnt FROM %s WHERE type="%s";`, bucketName, tableName)
 	pResponse := db.Query(sql)
 	//fmt.Println("CountDoc>", sql, pResponse.Result)
@@ -262,6 +276,8 @@ func maxDoc(bucketName, tableName string, db *mcb.DB) (count float64) {
 	//fmt.Println("CountTable>", pResponse.Result)
 	return
 }
+
+// getFieldVals() function returns the field values [this function Got from Mostain Sir]
 func getFieldVals(fieldNames, table, where string) (fVals map[string]string) {
 	fields := strings.Split(fieldNames, ",")
 	fVals = make(map[string]string)
@@ -283,6 +299,8 @@ func getFieldVals(fieldNames, table, where string) (fVals map[string]string) {
 	}
 	return
 }
+
+// doLogin() function tried to login to user account
 func doLogin(username, password string) string {
 	qs := `SELECT passw FROM master_erp WHERE type="login" AND username="%s"`
 	sql := fmt.Sprintf(qs, username)
@@ -290,19 +308,22 @@ func doLogin(username, password string) string {
 	pRes := db.Query(sql)
 	rows := pRes.GetRows()
 	if len(rows) == 0 {
-		//fmt.Fprintln(w, "Username not found!")
-		return "username"
+		return "username" // username not found
 	}
-	originalPassword := rows[0]["passw"].(string)
-	if checkHash(password, originalPassword) {
-		return "Done"
+	originalPassword := rows[0]["passw"].(string) //password saved in DB
+	if checkHash(password, originalPassword) {    //checking if original password is matched with provided password or not
+		return "Done" // login successful
 	}
 	return ""
 }
+
+// checkHash() function checks the provided password with original hashed password
 func checkHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 }
+
+// getStudentList() function returns the registered student list with detail information
 func getStudentList(cid string) []map[string]interface{} {
 	qs := `SELECT ac.first_name, ac.last_name, ac.email, ac.mobile, ac.create_date, ac.status, l.username as username FROM master_erp ac
 	LEFT JOIN master_erp as a ON a.account_id=META(ac).id AND a.type="address"
@@ -316,6 +337,8 @@ func getStudentList(cid string) []map[string]interface{} {
 
 	return rows
 }
+
+// getSingleStudent() function returns the information of a single students
 func getSingleStudent(username string) []map[string]interface{} {
 	qs := `SELECT ac.first_name, ac.last_name, ac.email, ac.mobile, ac.status, l.username as username, ad.city as city FROM master_erp ac
 	LEFT JOIN master_erp as a ON a.account_id=META(ac).id AND a.type="address"
@@ -329,7 +352,10 @@ func getSingleStudent(username string) []map[string]interface{} {
 
 	return rows
 }
+
+// updateStudentInfo() function updates the provided field information of a single student
 func updateStudentInfo(firstName, lastName, username, mobile, city string, status int) string {
+	// getting account_id of the user by provided username
 	qs := `SELECT account_id FROM master_erp WHERE type = "login" AND username = "%s"`
 	sql := fmt.Sprintf(qs, username)
 
@@ -337,6 +363,7 @@ func updateStudentInfo(firstName, lastName, username, mobile, city string, statu
 	rows := pRes.GetRows()
 	accID := rows[0]["account_id"].(string)
 
+	// updating account table
 	qs = `UPDATE master_erp SET first_name = "%s", last_name = "%s", mobile = "%s", status = %d WHERE type = "account" AND aid = "%s" RETURNING aid`
 	sql = fmt.Sprintf(qs, firstName, lastName, mobile, status, accID)
 
@@ -344,6 +371,7 @@ func updateStudentInfo(firstName, lastName, username, mobile, city string, statu
 	rows = pRes.GetRows()
 	update1 := rows[0]["aid"].(string)
 
+	// updating address table
 	qs = `UPDATE master_erp SET city = "%s" WHERE type = "address" AND account_id = "%s" RETURNING account_id`
 	sql = fmt.Sprintf(qs, city, accID)
 
@@ -351,7 +379,7 @@ func updateStudentInfo(firstName, lastName, username, mobile, city string, statu
 	rows = pRes.GetRows()
 	update2 := rows[0]["account_id"].(string)
 
-	if update1 == accID && update2 == accID {
+	if update1 == accID && update2 == accID { //if update success
 		return "OK"
 	}
 
