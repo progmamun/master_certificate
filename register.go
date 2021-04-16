@@ -48,6 +48,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 		formData["username"] = strings.TrimSpace(r.FormValue("username"))
 		formData["email"] = strings.TrimSpace(r.FormValue("email"))
 		formData["password"] = r.FormValue("password")
+		formData["remarks"] = strings.TrimSpace(r.FormValue("remarks"))
 		//** process ends: getting form data **//
 
 		doRegistration(formData, w, r) // calling a function which will do the registration
