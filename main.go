@@ -28,6 +28,7 @@ func main() {
 	http.HandleFunc("/dashboard", dashboard)
 
 	http.HandleFunc("/student_list", studentList)
+	http.HandleFunc("/student_search", studentSearch)
 
 	http.HandleFunc("/about", about)
 	http.HandleFunc("/contact", contact)

@@ -99,7 +99,7 @@ func doRegistration(formData map[string]string, w http.ResponseWriter, r *http.R
 	r.Form.Set("gender", "")                                           // female,male,other
 	r.Form.Set("mobile", "")                                           // phone
 	r.Form.Set("email", formData["email"])                             //
-	r.Form.Set("remarks", "Added by Form")                             // avg salary
+	r.Form.Set("remarks", formData["remarks"])                         // avg salary
 	r.Form.Set("create_date", createDate)                              //
 	r.Form.Set("update_date", createDate)                              //
 	r.Form.Set("status", "1")                                          //
@@ -364,8 +364,9 @@ func updateStudentInfo(firstName, lastName, username, mobile, city string, statu
 	accID := rows[0]["account_id"].(string)
 
 	// updating account table
-	qs = `UPDATE master_erp SET first_name = "%s", last_name = "%s", mobile = "%s", status = %d WHERE type = "account" AND aid = "%s" RETURNING aid`
-	sql = fmt.Sprintf(qs, firstName, lastName, mobile, status, accID)
+	currentDateTime := time.Now().String()[:19]
+	qs = `UPDATE master_erp SET first_name = "%s", last_name = "%s", mobile = "%s", status = %d, update_date = "%s" WHERE type = "account" AND aid = "%s" RETURNING aid`
+	sql = fmt.Sprintf(qs, firstName, lastName, mobile, status, currentDateTime, accID)
 
 	pRes = db.Query(sql)
 	rows = pRes.GetRows()
@@ -384,4 +385,27 @@ func updateStudentInfo(firstName, lastName, username, mobile, city string, statu
 	}
 
 	return "failed"
+}
+
+func doSearch(formData map[string]string, cid string) []map[string]interface{} {
+	qs := `SELECT ac.first_name, ac.last_name, ac.email, ac.mobile, ac.create_date, ac.status, l.username as username FROM master_erp ac
+	LEFT JOIN master_erp as a ON a.account_id=META(ac).id AND a.type="address"
+	LEFT JOIN master_erp as l ON l.account_id=META(ac).id AND l.type="login"
+	WHERE ac.cid = "` + cid + `" AND ac.type = "account" AND ac.status IN [0,1]`
+	for key, val := range formData {
+		if val != "" {
+			if key == "account_name" {
+				qs += ` AND LOWER(ac.` + key + `) LIKE "%` + val + `%"`
+			} else {
+				qs += ` AND ac.` + key + `="` + val + `"`
+			}
+		}
+	}
+	qs += ` ORDER BY ac.create_date DESC;`
+
+	pRes := db.Query(qs)
+	rows := pRes.GetRows()
+	//fmt.Println(rows)
+
+	return rows
 }
