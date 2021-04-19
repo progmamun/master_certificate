@@ -34,6 +34,7 @@ func main() {
 	http.HandleFunc("/contact", contact)
 
 	http.HandleFunc("/api/", api)
+	http.HandleFunc("/cert", cert)
 
 	//serving file from server to client
 	http.Handle("/resources/", http.StripPrefix("/resources/", http.FileServer(http.Dir("assets"))))
