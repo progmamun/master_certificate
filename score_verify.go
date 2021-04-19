@@ -7,9 +7,9 @@ import (
 	"net/http"
 )
 
-// codewars function takes the username of a Codewars user and returns the honor and total Go-Score (problem solved with golang) of that user
-func codewars(username string) (int, int) {
-	apiURL := "https://www.codewars.com/api/v1/users/" + username
+// codewars function takes the username of a Codewars user and returns the Go-Score (problem solved with golang) of that user
+func codewars(username string) int {
+	apiURL := fmt.Sprintf("https://www.codewars.com/api/v1/users/%s", username)
 
 	//setting up new request
 	req, err := http.NewRequest("GET", apiURL, nil)
@@ -31,12 +31,15 @@ func codewars(username string) (int, int) {
 	//fmt.Println(cwData)
 
 	// taking required values
-	honor := cwData.(map[string]interface{})["honor"].(float64)
-	ranks := cwData.(map[string]interface{})["ranks"]
-	languages := ranks.(map[string]interface{})["languages"]
-	golang := languages.(map[string]interface{})["go"]
-	goScore := golang.(map[string]interface{})["score"].(float64)
-	fmt.Println(honor, goScore)
+	var goScore float64 = -1
 
-	return int(honor), int(goScore)
+	ranks, isOK := cwData.(map[string]interface{})["ranks"]
+	if isOK {
+		languages := ranks.(map[string]interface{})["languages"]
+		golang := languages.(map[string]interface{})["go"]
+		goScore = golang.(map[string]interface{})["score"].(float64)
+	}
+	//fmt.Println(goScore)
+
+	return int(goScore)
 }
