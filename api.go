@@ -51,7 +51,13 @@ func processStudentInfo(path string, w http.ResponseWriter) {
 	username := strings.TrimPrefix(path, "/api/student_info/")
 	info := getSingleStudent(username)
 
+	var res []byte
+	var err error
 	w.Header().Set("Content-Type", "application/json")
-	b, _ := json.Marshal(info[0])
-	w.Write(b)
+
+	if len(info) > 0 {
+		res, err = json.Marshal(info[0])
+		checkErr(err)
+	}
+	w.Write(res)
 }

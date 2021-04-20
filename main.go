@@ -35,7 +35,7 @@ func main() {
 	rMux.HandleFunc("/about", about)
 	rMux.HandleFunc("/contact", contact)
 
-	rMux.PathPrefix("/api/").HandlerFunc(api)
+	rMux.PathPrefix("/api").HandlerFunc(api)
 	rMux.HandleFunc("/cert", cert)
 
 	//serving file from server to client
