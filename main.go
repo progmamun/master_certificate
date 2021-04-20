@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 )
 
@@ -20,27 +21,28 @@ func main() {
 	//Just a message for ensuring the local server is running
 	fmt.Println("Local server is listening on port 9001...")
 
-	http.HandleFunc("/", home)
-	http.HandleFunc("/register", register)
-	http.HandleFunc("/login", login)
-	http.HandleFunc("/logout", logout)
-	http.HandleFunc("/forgot_password", forgotpassword)
-	http.HandleFunc("/dashboard", dashboard)
+	//(instead of default 'http' router) using Gorilla mux router
+	rMux := mux.NewRouter()
 
-	http.HandleFunc("/student_list", studentList)
-	http.HandleFunc("/student_search", studentSearch)
+	rMux.HandleFunc("/", home)
+	rMux.HandleFunc("/register", register)
+	rMux.HandleFunc("/login", login)
+	rMux.HandleFunc("/logout", logout)
+	rMux.HandleFunc("/forgot_password", forgotpassword)
+	rMux.HandleFunc("/dashboard", dashboard)
+	rMux.HandleFunc("/student_list", studentList)
+	rMux.HandleFunc("/student_search", studentSearch)
+	rMux.HandleFunc("/about", about)
+	rMux.HandleFunc("/contact", contact)
 
-	http.HandleFunc("/about", about)
-	http.HandleFunc("/contact", contact)
-
-	http.HandleFunc("/api/", api)
-	http.HandleFunc("/cert", cert)
+	rMux.PathPrefix("/api/").HandlerFunc(api)
+	rMux.HandleFunc("/cert", cert)
 
 	//serving file from server to client
-	http.Handle("/resources/", http.StripPrefix("/resources/", http.FileServer(http.Dir("assets"))))
+	rMux.PathPrefix("/resources/").Handler(http.StripPrefix("/resources/", http.FileServer(http.Dir("assets"))))
 
 	//localhost running on port 9001
-	http.ListenAndServe(":9001", nil)
+	http.ListenAndServe(":9001", rMux)
 }
 
 func home(w http.ResponseWriter, r *http.Request) {

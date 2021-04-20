@@ -6,6 +6,7 @@ require (
 	github.com/SebastiaanKlippert/go-wkhtmltopdf v1.6.1
 	github.com/avct/uasurfer v0.0.0-20191028135549-26b5daa857f1 // indirect
 	github.com/elliotchance/orderedmap v1.4.0 // indirect
+	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/sessions v1.2.1
 	github.com/mateors/master-erp v0.0.0-20210408035054-7557b57e1be7
 	github.com/mateors/mcb v0.0.0-20201207015423-f79fcbf435d1
