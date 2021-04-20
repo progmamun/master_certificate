@@ -14,15 +14,16 @@ func codewars(username string) int {
 	//setting up new request
 	req, err := http.NewRequest("GET", apiURL, nil)
 	checkErr(err)
-	req.Header.Add("Content-Type", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9")
 
-	// executing request
+	// executing request & receiving response
 	client := &http.Client{}
 	response, err := client.Do(req)
 	checkErr(err)
+	defer response.Body.Close()
 
-	// receiving response
-	respBody, _ := ioutil.ReadAll(response.Body)
+	// taking response body
+	respBody, err := ioutil.ReadAll(response.Body)
+	checkErr(err)
 	//fmt.Println(string(respBody))
 
 	// parsing response
@@ -33,11 +34,15 @@ func codewars(username string) int {
 	// taking required values
 	var goScore float64 = -1
 
-	ranks, isOK := cwData.(map[string]interface{})["ranks"]
-	if isOK {
-		languages := ranks.(map[string]interface{})["languages"]
-		golang := languages.(map[string]interface{})["go"]
-		goScore = golang.(map[string]interface{})["score"].(float64)
+	ranks, isOK1 := cwData.(map[string]interface{})["ranks"]
+	if isOK1 {
+		languages, isOK2 := ranks.(map[string]interface{})["languages"]
+		if isOK2 {
+			golang, isOK3 := languages.(map[string]interface{})["go"]
+			if isOK3 {
+				goScore = golang.(map[string]interface{})["score"].(float64)
+			}
+		}
 	}
 	//fmt.Println(goScore)
 
