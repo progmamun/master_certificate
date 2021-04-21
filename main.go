@@ -14,6 +14,7 @@ var store = sessions.NewCookieStore([]byte("mysession"))
 func checkErr(err error) {
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 }
 
@@ -36,7 +37,9 @@ func main() {
 	rMux.HandleFunc("/contact", contact)
 
 	rMux.PathPrefix("/api").HandlerFunc(api)
-	rMux.HandleFunc("/cert", cert)
+
+	rMux.HandleFunc("/apply", apply)
+	rMux.PathPrefix("/cert").HandlerFunc(cert)
 
 	//serving file from server to client
 	rMux.PathPrefix("/resources/").Handler(http.StripPrefix("/resources/", http.FileServer(http.Dir("assets"))))

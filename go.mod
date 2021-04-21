@@ -3,6 +3,7 @@ module master_academy/master_certificate
 go 1.16
 
 require (
+	github.com/360EntSecGroup-Skylar/excelize v1.4.1
 	github.com/SebastiaanKlippert/go-wkhtmltopdf v1.6.1
 	github.com/avct/uasurfer v0.0.0-20191028135549-26b5daa857f1 // indirect
 	github.com/elliotchance/orderedmap v1.4.0 // indirect
