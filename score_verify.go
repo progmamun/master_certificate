@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
+
+	"github.com/360EntSecGroup-Skylar/excelize"
 )
 
 // codewars function takes the username of a Codewars user and returns the Go-Score (problem solved with golang) of that user
@@ -47,4 +50,29 @@ func codewars(username string) int {
 	//fmt.Println(goScore)
 
 	return int(goScore)
+}
+func attendence(email string) int {
+	counter := 0
+
+	// getting all the files from directory
+	files, err := ioutil.ReadDir("data/attendance")
+	checkErr(err)
+
+	for _, file := range files {
+		xlsxPath := filepath.Join("data", "attendance", file.Name())
+
+		xlsx, err := excelize.OpenFile(xlsxPath)
+		checkErr(err)
+
+		// Get all the rows in the Form Responses 1 (Sheet1).
+		rows := xlsx.GetRows("Form Responses 1")
+		for _, row := range rows {
+			if row[1] == email {
+				counter++
+			}
+		}
+	}
+	//fmt.Println(counter)
+
+	return counter
 }
