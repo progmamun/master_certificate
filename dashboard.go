@@ -3,29 +3,38 @@ package main
 import (
 	"html/template"
 	"net/http"
+	"os"
 )
 
 func dashboard(w http.ResponseWriter, r *http.Request) {
-	session, err := store.Get(r, "mysession")
-	checkErr(err)
+	//removing temp PDF file created at pdf view page
+	os.RemoveAll("assets/temp/")
+	os.MkdirAll("assets/temp/", 0755)
 
-	if session.Values["isLoggedIn"] == true {
+	//managing coockie
+	cMap := cookieCheck(w, r)
+	sessionUser := cMap["username"]
+
+	//checking access type
+	accType := getAccType(sessionUser)
+
+	if sessionUser != "" && accType == "ADMIN" {
 		//** process starts: preparing data for sending to frontend **//
-		if session.Values["isLoggedIn"] == nil {
-			session.Values["isLoggedIn"] = false
-			session.Values["username"] = ""
-		}
-
 		// using struct literal
 		data := struct {
-			Title      string
-			IsLoggedIn bool
-			Username   string
+			Title               string
+			Username            string
+			TotalStudents       int
+			CertRquestPending   int
+			CertRquestDelivered int
 		}{
-			Title:      "Dashboard | MASTER-ACADEMY",
-			IsLoggedIn: session.Values["isLoggedIn"].(bool),
-			Username:   session.Values["username"].(string),
+			Title:         "Dashboard | MASTER-ACADEMY",
+			Username:      sessionUser,
+			TotalStudents: getTotalStudentsNumber(),
 		}
+		pending, deliverd := getTotalCertReqNumber()
+		data.CertRquestPending = pending
+		data.CertRquestDelivered = deliverd
 		//** process ends: preparing data for sending to frontend **//
 
 		//** process starts: executing template **//
@@ -35,6 +44,8 @@ func dashboard(w http.ResponseWriter, r *http.Request) {
 		checkErr(err)
 		tmpl.Execute(w, data)
 		//** process ends: executing template **//
+	} else if sessionUser != "" && accType != "STUDENT" {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 	} else { //if not logged in then redirecting to login page
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 	}
