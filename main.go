@@ -6,10 +6,9 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/gorilla/sessions"
 )
 
-var store = sessions.NewCookieStore([]byte("mysession"))
+var PassWordEncryptionDecryption = "master_certificate"
 
 func checkErr(err error) {
 	if err != nil {
@@ -36,10 +35,14 @@ func main() {
 	rMux.HandleFunc("/about", about)
 	rMux.HandleFunc("/contact", contact)
 
-	rMux.PathPrefix("/api").HandlerFunc(api)
+	rMux.HandleFunc("/api/{request}", api)
 
+	rMux.HandleFunc("/cert_req_list", certRequestList)
 	rMux.HandleFunc("/apply", apply)
-	rMux.PathPrefix("/cert").HandlerFunc(cert)
+	rMux.HandleFunc("/cert/{certCode}", cert)
+	rMux.HandleFunc("/view/{certID}", view)
+
+	rMux.HandleFunc("/error", http.NotFound)
 
 	//serving file from server to client
 	rMux.PathPrefix("/resources/").Handler(http.StripPrefix("/resources/", http.FileServer(http.Dir("assets"))))
@@ -49,24 +52,18 @@ func main() {
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
-	session, err := store.Get(r, "mysession")
-	checkErr(err)
+	//managing coockie
+	cMap := cookieCheck(w, r)
+	sessionUser := cMap["username"]
 
 	//** process starts: preparing data for sending to frontend **//
-	if session.Values["isLoggedIn"] == nil {
-		session.Values["isLoggedIn"] = false
-		session.Values["username"] = ""
-	}
-
 	// using struct literal
 	data := struct {
-		Title      string
-		IsLoggedIn bool
-		Username   string
+		Title    string
+		Username string
 	}{
-		Title:      "Certificate Generator | MASTER-ACADEMY",
-		IsLoggedIn: session.Values["isLoggedIn"].(bool),
-		Username:   session.Values["username"].(string),
+		Title:    "Certificate Generator | MASTER-ACADEMY",
+		Username: sessionUser,
 	}
 	//** process ends: preparing data for sending to frontend **//
 

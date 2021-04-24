@@ -16,7 +16,7 @@ func generatePDF(data pdfData) bool {
 
 	//preparing path for store pdf
 	wDir, _ := os.Getwd()
-	certificatePath := filepath.Join(wDir, "print", "certificate", data.LedgerCode+".pdf")
+	certificatePath := filepath.Join(wDir, "print", "certificate", fmt.Sprintf("%s.pdf", data.LedgerCode))
 
 	//html template path of certificate
 	templateFile := "template/certificate/index.html"

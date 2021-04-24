@@ -7,28 +7,22 @@ import (
 )
 
 func register(w http.ResponseWriter, r *http.Request) {
-	session, err := store.Get(r, "mysession")
-	checkErr(err)
+	//managing coockie
+	cMap := cookieCheck(w, r)
+	sessionUser := cMap["username"]
 
 	if r.Method != "POST" {
-		if session.Values["isLoggedIn"] == true { // if already logged in, then redirecting to homepage
+		if sessionUser != "" { // if already logged in, then redirecting to homepage
 			http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
 		} else {
 			//** process starts: preparing data for sending to frontend **//
-			if session.Values["isLoggedIn"] == nil {
-				session.Values["isLoggedIn"] = false
-				session.Values["username"] = ""
-			}
-
 			// using struct literal
 			data := struct {
-				Title      string
-				IsLoggedIn bool
-				Username   string
+				Title    string
+				Username string
 			}{
-				Title:      "Register | MASTER-ACADEMY",
-				IsLoggedIn: session.Values["isLoggedIn"].(bool),
-				Username:   session.Values["username"].(string),
+				Title:    "Register | MASTER-ACADEMY",
+				Username: sessionUser,
 			}
 			//** process ends: preparing data for sending to frontend **//
 

@@ -25,7 +25,7 @@ func GenerateQrCode(value string, fileName string) bool {
 	checkErr(err)
 
 	// saving qr image to directory
-	fullPath := "data/account/" + fileName + ".png"
+	fullPath := fmt.Sprintf("data/account/%s.png", fileName)
 	err = ioutil.WriteFile(fullPath, body, 0644)
 	checkErr(err)
 
