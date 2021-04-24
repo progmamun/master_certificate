@@ -18,6 +18,7 @@ var db *mcb.DB
 
 const (
 	BucketName = "master_erp" //
+	cid        = "company::1" //company id
 
 	AccessTable             = "access"               //
 	AccountTable            = "account"              //
@@ -68,7 +69,7 @@ func init() {
 
 func doRegistration(formData map[string]string, w http.ResponseWriter, r *http.Request) {
 	//** process starts: checking into DB **//
-	check := isExsist(formData) //checking if username or email already exsist or not
+	check := isExsist(formData) //checking if username or email already exist or not
 	if check != "" {
 		fmt.Fprintln(w, check)
 		return
@@ -76,10 +77,9 @@ func doRegistration(formData map[string]string, w http.ResponseWriter, r *http.R
 	//** process ends: checking into DB **//
 
 	//** process starts: AccountTable **//
-	cid := "company::1"
 	accID, accSerial := findAailabledocID(AccountTable)
-	ledgerCode := getLedgerCode(accSerial)
-	fullName := strings.TrimSpace(formData["firstName"]) + " " + strings.TrimSpace(formData["lastName"])
+	ledgerCode := makeLedgerCode(accSerial)
+	fullName := fmt.Sprintf("%s %s", strings.TrimSpace(formData["firstName"]), strings.TrimSpace(formData["lastName"]))
 	createDate := time.Now().String()[:19]
 
 	r.Form.Set("bucket", BucketName)                                   //
@@ -159,7 +159,7 @@ func doRegistration(formData map[string]string, w http.ResponseWriter, r *http.R
 	r.Form.Set("serial", strconv.FormatInt(accHeadSerial, 10)) // company wise increase
 	r.Form.Set("account_group", fVal["account_group"])         // AccountGroup= Asset|Liability|Equity|Revenue|Expense
 	r.Form.Set("account_type", "STUDENT")                      // group|head
-	r.Form.Set("name", fullName+"(STUDENT)")                   // ledger name
+	r.Form.Set("name", fmt.Sprintf("%s (STUDENT)", fullName))  // ledger name
 	r.Form.Set("description", "")                              // ledger_details
 	r.Form.Set("identifier", "receivable")                     // for ensuring no ledgers are duplicate
 	r.Form.Set("code", ledgerCode)                             // ledger number or ledgercode
@@ -220,7 +220,7 @@ func isExsist(formData map[string]string) string {
 }
 
 // getLedgerCode() function creates a ledger code
-func getLedgerCode(accSerial int64) string {
+func makeLedgerCode(accSerial int64) string {
 	serial := strconv.FormatInt(accSerial, 10)
 	ledgerCode := "12"
 	for i := 0; i < 8-len(serial); i++ {
@@ -324,11 +324,11 @@ func checkHash(password, hash string) bool {
 }
 
 // getStudentList() function returns the registered student list with detail information
-func getStudentList(cid string) []map[string]interface{} {
+func getStudentList() []map[string]interface{} {
 	qs := `SELECT ac.first_name, ac.last_name, ac.email, ac.mobile, ac.create_date, ac.status, l.username as username FROM master_erp ac
 	LEFT JOIN master_erp as a ON a.account_id=META(ac).id AND a.type="address"
 	LEFT JOIN master_erp as l ON l.account_id=META(ac).id AND l.type="login"
-	WHERE ac.cid = "%s" AND ac.type = "account" AND ac.status IN [0,1] ORDER BY ac.create_date DESC;`
+	WHERE ac.cid = "%s" AND ac.type = "account" AND ac.account_type = "STUDENT" AND ac.status IN [0,1] ORDER BY ac.create_date DESC;`
 	sql := fmt.Sprintf(qs, cid)
 
 	pRes := db.Query(sql)
@@ -387,11 +387,11 @@ func updateStudentInfo(firstName, lastName, username, mobile, city string, statu
 	return "failed"
 }
 
-func doSearch(formData map[string]string, cid string) []map[string]interface{} {
+func doSearch(formData map[string]string) []map[string]interface{} {
 	qs := `SELECT ac.first_name, ac.last_name, ac.email, ac.mobile, ac.create_date, ac.status, l.username as username FROM master_erp ac
 	LEFT JOIN master_erp as a ON a.account_id=META(ac).id AND a.type="address"
 	LEFT JOIN master_erp as l ON l.account_id=META(ac).id AND l.type="login"
-	WHERE ac.cid = "` + cid + `" AND ac.type = "account" AND ac.status IN [0,1]`
+	WHERE ac.cid = "` + cid + `" AND ac.type = "account"  AND ac.account_type = "STUDENT" AND ac.status IN [0,1]`
 	for key, val := range formData {
 		if val != "" {
 			if key == "account_name" {
@@ -408,4 +408,153 @@ func doSearch(formData map[string]string, cid string) []map[string]interface{} {
 	//fmt.Println(rows)
 
 	return rows
+}
+
+func getLedgerCode(email string) string {
+	qs := `SELECT code FROM master_erp WHERE type="account" AND email="%s"`
+	sql := fmt.Sprintf(qs, email)
+
+	pRes := db.Query(sql)
+	rows := pRes.GetRows()
+	if len(rows) == 0 {
+		return "Not Found"
+	}
+
+	return rows[0]["code"].(string)
+}
+
+func isAlreadyRequested(email, courseName, duration string) bool {
+	qs := `SELECT email FROM master_erp WHERE email="%s" AND course_name ="%s" AND duration = "%s" AND type = "certificate" AND cid = "%s";`
+	sql := fmt.Sprintf(qs, email, courseName, duration, cid)
+
+	pRes := db.Query(sql)
+	rows := pRes.GetRows()
+
+	return len(rows) != 0
+}
+
+func updateWithQR(email, randomLedger string) string {
+	qs := `UPDATE master_erp SET customid = "%s" WHERE type = "account" AND email = "%s" RETURNING aid, code`
+	sql := fmt.Sprintf(qs, randomLedger, email)
+
+	pRes := db.Query(sql)
+	rows := pRes.GetRows()
+
+	if len(rows) == 0 {
+		return "failed"
+	}
+	return rows[0]["aid"].(string)
+}
+
+func insertCert(accID, ledgerCode, randomLedger, email, studentsName, courseName, duration string) string {
+	cerID, cerSerial := findAailabledocID("certificate")
+	requestDate := time.Now().String()[:19]
+
+	qs := `INSERT INTO master_erp ( KEY, VALUE ) VALUES ( "%s", 
+	{ "aid": "%s", "serial": %s, "type": "certificate", "cid": "%s",  "account_id":"%s", "email":"%s",
+	"students_name":"%s","course_name":"%s","duration":"%s","delivery_status":"Pending", "request_date":"%s", "code":"%s", "customid":"%s"})
+	RETURNING aid;`
+	sql := fmt.Sprintf(qs, cerID, cerID, strconv.FormatInt(cerSerial, 10), cid, accID, email, studentsName, courseName, duration, requestDate, ledgerCode, randomLedger)
+
+	pRes := db.Query(sql)
+	rows := pRes.GetRows()
+
+	if len(rows) == 0 {
+		return "failed"
+	}
+	return rows[0]["aid"].(string)
+}
+
+// getSingleStudent() function returns the information of a single students
+func getCertInfo(certCode string) []map[string]interface{} {
+	qs := `SELECT ac.code, ac.customid, cer.aid, cer.account_id, cer.students_name, cer.email, cer.course_name, cer.duration, cer.request_date, cer.delivery_status FROM master_erp ac
+	LEFT JOIN master_erp as cer ON cer.account_id=META(ac).id AND cer.type="certificate"
+	WHERE ac.type = "account" AND ac.customid = "%s" AND ac.cid = "%s";`
+	sql := fmt.Sprintf(qs, certCode, cid)
+
+	pRes := db.Query(sql)
+	rows := pRes.GetRows()
+
+	return rows
+}
+
+// getStudentList() function returns the registered student list with detail information
+func getCertRequestList() []map[string]interface{} {
+	qs := `SELECT aid, account_id, students_name, email, course_name, duration, request_date, delivery_status FROM master_erp
+	WHERE type = "certificate" AND cid = "%s" ORDER BY request_date DESC;`
+	sql := fmt.Sprintf(qs, cid)
+
+	pRes := db.Query(sql)
+	rows := pRes.GetRows()
+	//fmt.Println(rows)
+
+	return rows
+}
+func getCertReqInfo(email string) []map[string]interface{} {
+	qs := `SELECT ac.code, ac.customid, cer.aid, cer.account_id, cer.students_name, cer.email, cer.course_name, cer.duration, cer.request_date, cer.delivery_status FROM master_erp ac
+	LEFT JOIN master_erp as cer ON cer.account_id=META(ac).id AND cer.type="certificate"
+	WHERE ac.type = "account" AND cer.email = "%s" AND ac.cid = "%s";`
+	sql := fmt.Sprintf(qs, email, cid)
+
+	pRes := db.Query(sql)
+	rows := pRes.GetRows()
+	//fmt.Println(rows)
+
+	return rows
+}
+
+func getAccType(username string) string {
+	//checking: access name
+	qs := `SELECT access_name FROM master_erp WHERE type="login" AND username="%s" AND cid="%s";`
+	sql := fmt.Sprintf(qs, username, cid)
+
+	pRes := db.Query(sql)
+	rows := pRes.GetRows()
+	if len(rows) == 0 {
+		return ""
+	}
+	return rows[0]["access_name"].(string)
+}
+
+func getTotalStudentsNumber() int {
+	qs := `SELECT aid FROM master_erp
+	WHERE cid = "%s" AND type = "account" AND account_type = "STUDENT" AND status IN [0,1] ORDER BY create_date DESC;`
+	sql := fmt.Sprintf(qs, cid)
+
+	pRes := db.Query(sql)
+	rows := pRes.GetRows()
+	//fmt.Println(rows)
+
+	return len(rows)
+}
+func getTotalCertReqNumber() (int, int) {
+	qs := `SELECT delivery_status FROM master_erp
+	WHERE type = "certificate" AND cid = "%s" ORDER BY request_date DESC;`
+	sql := fmt.Sprintf(qs, cid)
+
+	pRes := db.Query(sql)
+	rows := pRes.GetRows()
+	//fmt.Println(rows)
+
+	pending := 0
+	for _, val := range rows {
+		if val["delivery_status"] == "Pending" {
+			pending++
+		}
+	}
+
+	return pending, len(rows) - pending
+}
+
+func updateDeliveryStatus(email string) string {
+	qs := `UPDATE master_erp SET delivery_status = "Delivered" WHERE type = "certificate" AND email = "%s" RETURNING aid`
+	sql := fmt.Sprintf(qs, email)
+
+	pRes := db.Query(sql)
+	rows := pRes.GetRows()
+
+	if len(rows) == 0 {
+		return "failed"
+	}
+	return rows[0]["aid"].(string)
 }

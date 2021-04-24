@@ -44,7 +44,7 @@ body {
     text-align: left;
     color: #031b4e;
 }
-.mdc-text-field, .mdc-text-field, .mdc-text-field, .mdc-text-field, .loginHeader p {
+.mdc-text-field, .loginHeader p {
     margin: 10px auto;
     width: 100%;
 }

@@ -5,24 +5,28 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
+
+	"github.com/360EntSecGroup-Skylar/excelize"
 )
 
-// codewars function takes the username of a Codewars user and returns the honor and total Go-Score (problem solved with golang) of that user
-func codewars(username string) (int, int) {
-	apiURL := "https://www.codewars.com/api/v1/users/" + username
+// codewars function takes the username of a Codewars user and returns the Go-Score (problem solved with golang) of that user
+func codewars(username string) int {
+	apiURL := fmt.Sprintf("https://www.codewars.com/api/v1/users/%s", username)
 
 	//setting up new request
 	req, err := http.NewRequest("GET", apiURL, nil)
 	checkErr(err)
-	req.Header.Add("Content-Type", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9")
 
-	// executing request
+	// executing request & receiving response
 	client := &http.Client{}
 	response, err := client.Do(req)
 	checkErr(err)
+	defer response.Body.Close()
 
-	// receiving response
-	respBody, _ := ioutil.ReadAll(response.Body)
+	// taking response body
+	respBody, err := ioutil.ReadAll(response.Body)
+	checkErr(err)
 	//fmt.Println(string(respBody))
 
 	// parsing response
@@ -31,12 +35,44 @@ func codewars(username string) (int, int) {
 	//fmt.Println(cwData)
 
 	// taking required values
-	honor := cwData.(map[string]interface{})["honor"].(float64)
-	ranks := cwData.(map[string]interface{})["ranks"]
-	languages := ranks.(map[string]interface{})["languages"]
-	golang := languages.(map[string]interface{})["go"]
-	goScore := golang.(map[string]interface{})["score"].(float64)
-	fmt.Println(honor, goScore)
+	var goScore float64 = -1
 
-	return int(honor), int(goScore)
+	ranks, isOK1 := cwData.(map[string]interface{})["ranks"]
+	if isOK1 {
+		languages, isOK2 := ranks.(map[string]interface{})["languages"]
+		if isOK2 {
+			golang, isOK3 := languages.(map[string]interface{})["go"]
+			if isOK3 {
+				goScore = golang.(map[string]interface{})["score"].(float64)
+			}
+		}
+	}
+	//fmt.Println(goScore)
+
+	return int(goScore)
+}
+func attendence(email string) int {
+	counter := 0
+
+	// getting all the files from directory
+	files, err := ioutil.ReadDir("data/attendance")
+	checkErr(err)
+
+	for _, file := range files {
+		xlsxPath := filepath.Join("data", "attendance", file.Name())
+
+		xlsx, err := excelize.OpenFile(xlsxPath)
+		checkErr(err)
+
+		// Get all the rows in the Form Responses 1 (Sheet1).
+		rows := xlsx.GetRows("Form Responses 1")
+		for _, row := range rows {
+			if row[1] == email {
+				counter++
+			}
+		}
+	}
+	//fmt.Println(counter)
+
+	return counter
 }

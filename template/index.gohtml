@@ -36,7 +36,7 @@
                         {{ end }}
 
                         {{ block "topbarRight" . }}
-                            {{ if eq .IsLoggedIn true }}
+                            {{ if ne .Username "" }}
                                 <p id="sessionUser" style="display: none;">{{ .Username }}</p>
                                 <section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-end" role="toolbar">
                                     <button id="dashboard" class="mdc-icon-button material-icons mdc-top-app-bar__action-item--unbounded" aria-label="Profile">
@@ -125,11 +125,18 @@
 
                                 <hr class="mdc-list-divider">
                                 <h6 class="mdc-list-group__subheader">Student</h6>
-
                                 <a class="mdc-list-item mdc-list-item" href="/student_list" aria-current="page" tabindex="0">
                                     <span class="mdc-list-item__ripple"></span>
                                     <i class="material-icons mdc-list-item__graphic" aria-hidden="true">format_list_numbered</i>
                                     <span class="mdc-list-item__text">Student List</span>
+                                </a>
+
+                                <hr class="mdc-list-divider">
+                                <h6 class="mdc-list-group__subheader">Certificate</h6>
+                                <a class="mdc-list-item mdc-list-item" href="/cert_req_list" aria-current="page" tabindex="0">
+                                    <span class="mdc-list-item__ripple"></span>
+                                    <i class="material-icons mdc-list-item__graphic" aria-hidden="true">format_list_numbered</i>
+                                    <span class="mdc-list-item__text">Request List</span>
                                 </a>
                             </nav>
                         </div>
