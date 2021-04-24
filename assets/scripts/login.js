@@ -12,7 +12,7 @@ $('#loginForm').submit(function (e) {
     let flag = 1;
     if ($('#username').val().trim() == "") {
         $('#username').val("");
-        notify("Please give a username!");
+        notify("Please give a username!", 5000);
         flag = 0;
     }
 
@@ -29,17 +29,21 @@ $('#loginForm').submit(function (e) {
         });
 
         request.done(function (response) {
-            if (response.trim() == "Login Done") {
-                notify("Login successful!");
+            //console.log(response.trim())
+            if (response.trim() == "Login ADMIN") {
+                notify("Login successful!", 5000);
                 window.location.href = "/dashboard";
+            } else if (response.trim() == "Login Done") {
+                notify("Login successful!", 5000);
+                window.location.href = "/";
             } else {
                 //console.log(response)
-                notify(response);
+                notify(response, 5000);
             }
         });
 
         request.fail(function (response) {
-            notify(response);
+            notify(response, 5000);
         });
 
         request.always(function () {
@@ -50,8 +54,8 @@ $('#loginForm').submit(function (e) {
     return false;
 });
 
-function notify(msg) {
-    snackbar.timeoutMs = 5000;
+function notify(msg, time) {
+    snackbar.timeoutMs = time;
     snackbar.labelText = msg;
     snackbar.actionButtonText = "OKAY";
     snackbar.open();

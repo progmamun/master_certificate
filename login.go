@@ -5,31 +5,49 @@ import (
 	"html/template"
 	"net/http"
 	"strings"
+
+	"github.com/mateors/mtool"
 )
 
+func cookieCheck(w http.ResponseWriter, r *http.Request) (cMap map[string]string) {
+	log_session, err := r.Cookie("log_session")
+
+	if err != nil { //got error/not exist -> create one coockie
+		userData := make(map[string]string)
+		userData["username"] = ""
+
+		sessionStr := mtool.MapToString(userData)
+		sessionValue := mtool.EncodeStr(sessionStr, PassWordEncryptionDecryption)
+
+		c := &http.Cookie{
+			Name:   "log_session",
+			Value:  sessionValue,
+			MaxAge: 86400,
+		}
+		http.SetCookie(w, c)
+	} else { //already exist one log_session coockie
+		cText := mtool.DecodeStr(log_session.Value, PassWordEncryptionDecryption)
+		cMap = mtool.StringToMap(cText)
+	}
+	return cMap
+}
 func login(w http.ResponseWriter, r *http.Request) {
-	session, err := store.Get(r, "mysession")
-	checkErr(err)
+	//managing coockie
+	cMap := cookieCheck(w, r)
+	sessionUser := cMap["username"]
 
 	if r.Method != "POST" {
-		if session.Values["isLoggedIn"] == true { // if already logged in, then redirecting to homepage
-			http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
+		if sessionUser != "" { // if already logged in, then redirecting to homepage
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 		} else {
 			//** process starts: preparing data for sending to frontend **//
-			if session.Values["isLoggedIn"] == nil {
-				session.Values["isLoggedIn"] = false
-				session.Values["username"] = ""
-			}
-
 			// using struct literal
 			data := struct {
-				Title      string
-				IsLoggedIn bool
-				Username   string
+				Title    string
+				Username string
 			}{
-				Title:      "Login | MASTER-ACADEMY",
-				IsLoggedIn: session.Values["isLoggedIn"].(bool),
-				Username:   session.Values["username"].(string),
+				Title:    "Login | MASTER-ACADEMY",
+				Username: sessionUser,
 			}
 			//** process ends: preparing data for sending to frontend **//
 
@@ -51,13 +69,29 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 		if check == "Done" { // if login done
 			//** process ends: storing session values **//
-			session.Values["username"] = username
-			session.Values["password"] = password
-			session.Values["isLoggedIn"] = true
-			session.Save(r, w)
+			userData := make(map[string]string)
+			userData["username"] = username
+
+			sessionStr := mtool.MapToString(userData)
+			sessionValue := mtool.EncodeStr(sessionStr, PassWordEncryptionDecryption)
+
+			c := &http.Cookie{
+				Name:   "log_session",
+				Value:  sessionValue,
+				MaxAge: 86400,
+			}
+
+			http.SetCookie(w, c)
 			//** process ends: storing session values **//
 
-			fmt.Fprintln(w, "Login Done")
+			//checking access type
+			accType := getAccType(username)
+
+			if accType == "ADMIN" {
+				fmt.Fprintln(w, "Login ADMIN")
+			} else {
+				fmt.Fprintln(w, "Login Done")
+			}
 		} else if check == "username" {
 			fmt.Fprintln(w, "Username not found!")
 		} else {
@@ -67,38 +101,36 @@ func login(w http.ResponseWriter, r *http.Request) {
 }
 
 func logout(w http.ResponseWriter, r *http.Request) {
-	session, err := store.Get(r, "mysession")
-	checkErr(err)
-
 	//** process starts: deleting session values **//
-	session.Values["username"] = ""
-	session.Values["password"] = ""
-	session.Values["isLoggedIn"] = false
+	userData := make(map[string]string)
+	userData["username"] = ""
 
-	session.Options.MaxAge = -1 //cookies will be deleted immediately.
-	session.Save(r, w)
+	sessionStr := mtool.MapToString(userData)
+	sessionValue := mtool.EncodeStr(sessionStr, PassWordEncryptionDecryption)
+
+	c := &http.Cookie{
+		Name:   "log_session",
+		Value:  sessionValue,
+		MaxAge: -1,
+	}
+
+	http.SetCookie(w, c)
 	//** process ends: deleting session values **//
 
 	http.Redirect(w, r, "/", http.StatusSeeOther) //after logout, redirecting to homepage
 }
 
 func forgotpassword(w http.ResponseWriter, r *http.Request) {
-	session, err := store.Get(r, "mysession")
-	checkErr(err)
-
+	//managing coockie
+	cMap := cookieCheck(w, r)
+	sessionUser := cMap["username"]
 	//preparing data for sending frontend
-	if session.Values["isLoggedIn"] == nil {
-		session.Values["isLoggedIn"] = false
-		session.Values["username"] = ""
-	}
 	data := struct {
-		Title      string
-		IsLoggedIn bool
-		Username   string
+		Title    string
+		Username string
 	}{
-		Title:      "Request for password reset | MASTER-ACADEMY",
-		IsLoggedIn: session.Values["isLoggedIn"].(bool),
-		Username:   session.Values["username"].(string),
+		Title:    "Request for password reset | MASTER-ACADEMY",
+		Username: sessionUser,
 	}
 
 	tmpl, err := template.ParseFiles("template/index.gohtml")
