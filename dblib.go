@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -62,7 +61,7 @@ func init() {
 	res, err := db.Ping()
 	if err != nil {
 		fmt.Println(res)
-		os.Exit(1)
+		// os.Exit(1)
 	}
 }
 
