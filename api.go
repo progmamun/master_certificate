@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	"gopkg.in/gomail.v2"
 )
 
 func api(w http.ResponseWriter, r *http.Request) {
@@ -139,33 +138,28 @@ func sendCertEmail(w http.ResponseWriter, r *http.Request) {
 
 	for key := range emails {
 		email := emails[key][1 : len(emails[key])-1]
-
 		ledger := getLedgerCode(email)
 
 		//preparing path for store pdf
 		wDir, _ := os.Getwd()
 		certificatePath := filepath.Join(wDir, "print", "certificate", fmt.Sprintf("%s.pdf", ledger))
 
-		m := gomail.NewMessage()
-		m.SetHeader("From", "fakenahid@gmail.com")
-		m.SetHeader("To", email)
-		m.SetHeader("Subject", "Master Academy Certificate")
-		m.SetBody("text/html", "")
-		m.Attach(certificatePath)
+		from := "fakenahid@gmail.com"
+		to := email
+		subject := "Master Academy Certificate"
+		body := ""
+		attachmentFilePath := certificatePath
 
-		d := gomail.NewDialer("smtp.gmail.com", 587, "username", "password")
-		err := d.DialAndSend(m)
-		// Send the email to Bob, Cora and Dan.
-		if err != nil {
+		sRes := sendEmail(from, to, subject, body, attachmentFilePath)
+		if !sRes {
 			data.Failed = append(data.Failed, emails[key])
-			fmt.Println(err)
 			continue
 		}
 		//mail sent
 
 		//updateing certificate table
-		res := updateDeliveryStatus(email)
-		if res != "failed" {
+		qRes := updateDeliveryStatus(email)
+		if qRes != "failed" {
 			data.Success = append(data.Success, emails[key])
 		}
 	}
