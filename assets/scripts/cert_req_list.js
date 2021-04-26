@@ -10,7 +10,7 @@ textFieldElements.forEach((textFieldEl) => {
 
 $('#btnFilter').on('click', function (e) {
     console.log("Button filter pressed.");
-    notify("test", 6000)
+    //notify("test", 6000)
 
     dialogSearch.autoStackButtons = false;
     dialogSearch.open();
@@ -72,7 +72,7 @@ function certify(cr) {
     });
     request.done(function (response) {
         //console.log(response);
-        window.location.href = response;
+        window.open(response, '_blank');
     });
 
     request.fail(function (response) {
