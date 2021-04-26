@@ -15,7 +15,7 @@ func sendEmail(from, to, subject, body, attachmentFilePath string) bool {
 	m.SetBody("text/html", body)
 	m.Attach(attachmentFilePath)
 
-	d := gomail.NewDialer("smtp.gmail.com", 587, "fakenahid@gmail.com", "kilheoggpoksqfnk")
+	d := gomail.NewDialer("smtp.gmail.com", 587, "sender-mail-id", "password")
 
 	err := d.DialAndSend(m)
 	if err != nil {
